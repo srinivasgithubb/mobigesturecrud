@@ -1,0 +1,330 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>CRUD JavaScript JQuery And Web API</title>
+    <link href="Content/bootstrap.min.css" rel="stylesheet" />
+    <script src="Scripts/bootstrap.min.js"></script>
+    <script src="Scripts/jquery-3.0.0.min.js"></script>
+</head>
+<body>
+    <form id="form">
+        <div class="container">
+            <div class="row">
+                <div class="col-sm-9">
+                    <h2>CRUD JavaScript JQuery And Web API</h2>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-sm-6">
+                    <table id="productTable" class="table table-bordered table-condensed table-striped">
+                        <thead>
+                            <tr>
+                                <th>Edit</th>
+                                <th>Product Name</th>
+                                <th>Product Email</th>
+                                <th>Product URL</th>
+                                <th>Delete</th>
+                            </tr>
+                        </thead>
+                    </table>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-sm-6">
+                    <div class="panel panel-primary">
+                        <div class="panel-heading">
+                            <b> Enter Product Information </b>
+                        </div>
+                        <div class="panel-body">
+                            <div class="form-group">
+                                <label for="productname">Product Name</label>
+                                <input type="text" runat="server" id="productname" class="form-control" />
+                            </div>
+                            <div class="form-group">
+                                <label for="email">Product Email</label>
+                                <input type="email" runat="server" id="email" class="form-control" />
+                            </div>
+                            <div class="form-group">
+                                <label for="url">Product URL</label>
+                                <input type="url" runat="server" id="url" class="form-control" />
+                            </div>
+
+                        </div>
+                        <div class="panel-footer">
+                            <div class="row">
+                                <div class="flex-lg-column">
+                                    <div class="col-xs-12">
+                                        <button type="button" id="updateButton" onclick="updateClick();"> Add </button>
+                                    </div>
+                                </div>
+                                <div class="flex-lg-column">
+                                    <div class="col-sm-12">
+                                        <button type="button" id="addButton" onclick="addClick();">Clear Product</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <script>
+            var Product = {
+                ProductId: 0,
+                ProductName: "",
+                Email: "",
+                Url: ""
+            }
+
+            function addClick() {
+                formClear();
+                $("#updateButton").text("Add");
+            }
+
+            // under progress
+            function Fieldvalidation() {
+                var productName = $("#productname").val();
+                var productEmail = $("#email").val();
+                var productURL = $("#url").val();
+                var isValid = false;
+                var errorMessage = "";
+
+                if (productName == "" || productName == null || productName == undefined) {
+                    errorMessage = "Please Enter Product Name\n";
+                    isValid = true;
+                }
+                if (productEmail == "" || productEmail == null || productEmail == undefined) {
+                    errorMessage = errorMessage + "Please Enter Product Email\n";
+                    isValid = true;
+                }
+                if (productURL == "" || productURL == null || productURL == undefined) {
+                    errorMessage = errorMessage + "Please Enter Product URL";
+                    isValid = true;
+                }
+                if (errorMessage != "") {
+                    return true;
+                    alert(errorMessage);
+                }
+                if (errorMessage == "" && isValid == true) {
+                    return true;
+                }
+                else {
+                    return false;
+                }
+
+            }
+
+            function productList() {
+                // Call Web API to get a list of Product
+                $.ajax({
+                    url: '/api/Product/',
+                    type: 'GET',
+                    dataType: 'json',
+                    success: function (products) {
+                        productListSuccess(products);
+                    },
+                    error: function (request, message, error) {
+                        handleException(request, message, error);
+                    }
+                });
+            }
+
+            function productListSuccess(products) {
+                // Iterate over the collection of data
+                $.each(products, function (index, product) {
+                    // Add a row to the Product table
+                    productAddRow(product);
+                });
+            }
+
+            function productAddRow(product) {
+                // Check if <tbody> tag exists, add one if not
+
+                if ($("#productTable tbody").length == 0) {
+                    $("#productTable").append("<tbody></tbody>");
+                }
+
+                // Append row to <table>
+                $("#productTable tbody").append(
+                    productBuildTableRow(product));
+            }
+
+            function productBuildTableRow(product) {
+                var ret =
+                    "<tr>" +
+                    "<td>" +
+                    "<button type='button' " +
+                    "onclick='productGet(this);' " +
+                    "class='btn btn-default' " +
+                    "data-id='" + product.ProductId + "'>" +
+                    "<span class='glyphicon glyphicon-edit' />" +
+                    "Edit"
+                    + "</button>" +
+                    "</td>" +
+                    "<td>" + product.ProductName + "</td>" +
+                    "<td>" + product.Email + "</td>" +
+                    "<td>" + product.Url + "</td>" +
+                    "<td>" +
+                    "<button type='button' " +
+                    "onclick='productDelete(this);' " +
+                    "class='btn btn-default' " +
+                    "data-id='" + product.ProductId + "'>" +
+                    "<span class='glyphicon glyphicon-remove' />" +
+                    "Delete"
+                "</button>" +
+                    "</td>" +
+                    "</tr>";
+                return ret;
+            }
+
+            function handleException(request, message, error) {
+                var msg = "";
+                msg += "Code: " + request.status + "\n";
+                msg += "Text: " + request.statusText + "\n";
+                if (request.responseJSON != null) {
+                    msg += "Message" + request.responseJSON.Message + "\n";
+                }
+                alert(msg);
+            }
+
+            function productGet(ctl) {
+                // Get product id from data- attribute
+                var id = $(ctl).data("id");
+
+                // Store product id in hidden field
+                $("#productid").val(id);
+
+                // Call Web API to get a list of Products
+                $.ajax({
+                    url: "/api/Product/" + id,
+                    type: 'GET',
+                    dataType: 'json',
+                    success: function (product) {
+                        productToFields(product);
+
+                        // Change Update Button Text
+                        $("#updateButton").text("Update");
+                    },
+                    error: function (request, message, error) {
+                        handleException(request, message, error);
+                    }
+                });
+            }
+
+            function productToFields(product) {
+                $("#productname").val(product.ProductName);
+                $("#email").val(product.Email);
+                $("#url").val(product.Url);
+            }
+
+
+
+            function updateClick() {
+                // Build product object from inputs
+                Product = new Object();
+                Product.ProductId = $("#productid").val();
+                Product.ProductName = $("#productname").val();
+                Product.Email = $("#email").val();
+                Product.Url = $("#url").val();
+                if ($("#updateButton").text().trim() == "Add") {
+                    productAdd(Product);
+                }
+                else {
+                    productUpdate(Product);
+                }
+            }
+
+            function productAdd(product) {
+                $.ajax({
+                    url: "/api/Product",
+                    type: 'POST',
+                    contentType:
+                        "application/json;charset=utf-8",
+                    data: JSON.stringify(product),
+                    success: function (product) {
+                        productAddSuccess(product);
+                    },
+                    error: function (request, message, error) {
+                        handleException(request, message, error);
+                    }
+                });
+            }
+
+            function productAddSuccess(product) {
+                productAddRow(product);
+                formClear();
+            }
+
+            function formClear() {
+                $("#productname").val("");
+                $("#email").val("");
+                $("#url").val("");
+            }
+
+            function productUpdate(product) {
+                var url = "/api/Product/" + product.ProductId;
+                $.ajax({
+                    url: url,
+                    type: 'PUT',
+                    contentType:
+                        "application/json;charset=utf-8",
+                    data: JSON.stringify(product),
+                    success: function (product) {
+                        productUpdateSuccess(product);
+                    },
+                    error: function (request, message, error) {
+                        handleException(request, message, error);
+                    }
+                });
+            }
+
+            function productUpdateSuccess(product) {
+                productUpdateInTable(product);
+            }
+
+            function productUpdateInTable(product) {
+                // Find Product in <table>
+                var row = $("#productTable button[data-id='" + product.ProductId + "']").parents("tr")[0];
+
+                // Add changed product to table
+                $(row).after(productBuildTableRow(product));
+
+                // Remove original product
+                $(row).remove();
+
+                // Clear form fields
+                formClear();
+
+                // Change Update Button Text
+                $("#updateButton").text("Add");
+            }
+
+            function productDelete(ctl) {
+                var id = $(ctl).data("id");
+
+                $.ajax({
+                    url: "/api/Product/" + id,
+                    type: 'DELETE',
+                    success: function (product) {
+                        $(ctl).parents("tr").remove();
+                    },
+                    error: function (request, message, error) {
+                        handleException(request, message, error);
+                    }
+                });
+                formClear();
+                $("#updateButton").text("Add");
+            }
+
+            $(document).ready(function () {
+                productList();
+            });
+
+        </script>
+        <input type="hidden" id="productid" value="0" />
+    </form>
+    Note: Currently i am not storing any form value data into the database. Because of that, data may vary when you are doing data manipulation.
+</body>
+</html>
